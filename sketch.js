@@ -11,7 +11,6 @@ function windowResized() {
 
 function draw() {
   background(0); // clear
-
   container.updateParticles();
 
   for (const p of container.particles) {

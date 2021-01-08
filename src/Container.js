@@ -10,10 +10,8 @@ class Container {
   }
 
   checkWallCollision(particle) {
-    if (!Boolean(particle)) return;
-
     const { pos, vel, radius } = particle;
-    
+
     const hitLeftWall = pos.x <= radius && vel.x < 0;
     const hitRightWall = this.width - pos.x <= radius && vel.x > 0;
     const hitTopWall = pos.y <= radius && vel.y < 0;
@@ -28,11 +26,13 @@ class Container {
   }
 
   updateParticles() {
-    if (!Boolean(this.particles.length)) return;
-
     for (let i = 0; i < this.particles.length; i++) {
       let particle = this.particles[i];
-      if (particle === undefined) continue;
+
+      for (let j = i + 1; j < this.particles.length; j++) {
+        let otherParticle = this.particles[j];
+        if (particle.collidesWith(otherParticle)) console.log('bump !');
+      }
 
       this.checkWallCollision(particle);
       particle.updatePosition();
