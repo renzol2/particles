@@ -1,5 +1,7 @@
 /** @type {Container} */
 let container;
+let isPaused = false;
+let showControls = true;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -11,19 +13,49 @@ function windowResized() {
 }
 
 function draw() {
-  background(0); // clear
-  container.updateParticles();
+  background(50); // clear
+
+  if (!isPaused) {
+    container.updateParticles();
+  }
 
   for (const p of container.particles) {
     // FIXME:? Drawing the radius ~2x as big looks more accurate
+    fill(p.color.r, p.color.g, p.color.b);
     circle(p.pos.x, p.pos.y, p.radius * 1.9);
   }
+  
+  if (showControls) writeControls();
+}
+
+function writeControls() {
+  const controls = [
+    'Click: create particle',
+    'C: clear particles',
+    'P: pause',
+    'H: hide controls',
+    'Up arrow: increase speed',
+    'Down arrow: decrease speed',
+    'R: reset speed',
+  ];
+
+  fill(255, 255, 255);
+  text('Controls', 10, 20);
+  controls.forEach((c, i) => {
+    text(c, 20, 20 + (i + 1) * 20);
+  });
 }
 
 function mouseClicked() {
   // Create particle at mouse location
-  const size = generateRandomNumber(5, 30);
+  const size = getRandInt(5, 30);
+  const color = {
+    r: getRandInt(0, 255),
+    g: getRandInt(0, 255),
+    b: getRandInt(0, 255),
+  };
   let p = new Particle(mouseX, mouseY, size, size);
+  p.color = color;
   container.addParticle(p);
 }
 
@@ -31,6 +63,22 @@ function keyPressed() {
   switch (keyCode) {
     case 67: // C
       container.clearParticles();
+      break;
+    case 82: // R
+      container.timestep = 1;
+      break;
+    case 38: // up arrow
+      container.adjustTimestep(1.2);
+      break;
+    case 40: // down arrow
+      container.adjustTimestep(0.8);
+      break;
+    case 72: // H
+      showControls = !showControls;
+      break;
+    case 80: // P
+      isPaused = !isPaused;
+      break;
     default:
   }
 }
@@ -40,7 +88,7 @@ function keyPressed() {
  * @param {Number} min lower bound
  * @param {Number} max higher bound
  */
-function generateRandomNumber(min, max) {
+function getRandInt(min, max) {
   return (max - min) * Math.random() + min;
 }
 
@@ -51,6 +99,7 @@ class Container {
   constructor() {
     this.width = windowWidth;
     this.height = windowHeight;
+    this.timestep = 1;
     /** @type {Array<Particle>} */
     this.particles = [];
   }
@@ -99,7 +148,14 @@ class Container {
       }
 
       this.checkWallCollision(particle);
-      particle.updatePosition();
+      particle.updatePosition(this.timestep);
+    }
+  }
+
+  adjustTimestep(factor) {
+    this.timestep *= factor;
+    if (this.timestep < 0) {
+      this.timestep = 0;
     }
   }
 
@@ -120,22 +176,24 @@ class Particle {
    * @param {Number} mass mass of Particle
    * @param {Number} velocityRange determines range of random velocity [-vR, vR]
    */
-  constructor(x, y, radius, mass, velocityRange = mass / 2) {
+  constructor(x, y, radius, mass, velocityRange = 40 / mass, color = null) {
     this.pos = { x, y };
     this.vel = {
-      x: generateRandomNumber(-velocityRange, velocityRange),
-      y: generateRandomNumber(-velocityRange, velocityRange),
+      x: getRandInt(-velocityRange, velocityRange),
+      y: getRandInt(-velocityRange, velocityRange),
     };
     this.radius = radius;
     this.mass = mass;
+    this.color = color;
   }
 
   /**
    * Updates particle's position based on its velocity
+   * @param {Number} timestep time component
    */
-  updatePosition() {
-    this.pos.x += this.vel.x;
-    this.pos.y += this.vel.y;
+  updatePosition(timestep) {
+    this.pos.x += this.vel.x * timestep;
+    this.pos.y += this.vel.y * timestep;
   }
 
   /**
