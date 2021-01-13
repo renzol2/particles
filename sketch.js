@@ -1,8 +1,9 @@
+/** @type {Container} */
 let container;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  container = new Container(windowWidth, windowHeight);
+  container = new Container();
 }
 
 function windowResized() {
@@ -20,9 +21,8 @@ function draw() {
 
 function mouseClicked() {
   // Create particle at mouse location
-  container.addParticle(
-    new Particle(mouseX, mouseY, Particle.generateRandomNumber(5, 20))
-  );
+  let p = new Particle(mouseX, mouseY, Particle.generateRandomNumber(5, 20));
+  container.addParticle(p);
 }
 
 function keyPressed() {
@@ -37,16 +37,25 @@ function keyPressed() {
  * Stores and modifies particles
  */
 class Container {
-  constructor(width, height) {
-    this.width = width;
-    this.height = height;
+  constructor() {
+    this.width = windowWidth;
+    this.height = windowHeight;
+    /** @type {Array<Particle>} */
     this.particles = [];
   }
 
+  /**
+   * Adds particle to container
+   * @param {Particle} particle 
+   */
   addParticle(particle) {
     this.particles.push(particle);
   }
 
+  /**
+   * Performs particle-wall collision
+   * @param {Particle} particle 
+   */
   checkWallCollision(particle) {
     const { pos, vel, radius } = particle;
 
@@ -86,10 +95,21 @@ class Container {
  * Represents a single particle in simulation
  */
 class Particle {
+  /**
+   * Generates a random integer in [min, max]
+   * @param {Number} min lower bound
+   * @param {Number} max higher bound
+   */
   static generateRandomNumber(min, max) {
     return (max - min) * Math.random() + min;
   }
 
+  /**
+   * 
+   * @param {Number} x x position coord of Particle
+   * @param {Number} y y position coord of Particle
+   * @param {Number} radius radius of Particle
+   */
   constructor(x, y, radius) {
     this.pos = { x, y };
     this.vel = {
@@ -99,19 +119,32 @@ class Particle {
     this.radius = radius;
   }
 
+  /**
+   * Updates particle's position based on its velocity
+   */
   updatePosition() {
     this.pos.x += this.vel.x;
     this.pos.y += this.vel.y;
   }
 
+  /**
+   * Reverses Particle's horizontal velocity
+   */
   reverseXVelocity() {
     this.vel.x = -this.vel.x;
   }
 
+  /**
+   * Reverses Particle's vertical velocity
+   */
   reverseYVelocity() {
     this.vel.y = -this.vel.y;
   }
 
+  /**
+   * Returns whether this particle collides with the given particle
+   * @param {Particle} otherParticle other particle
+   */
   collidesWith(otherParticle) {
     const { pos, vel, radius } = otherParticle;
     const posDiffX = this.pos.x - pos.x;
