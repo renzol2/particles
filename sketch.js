@@ -15,19 +15,20 @@ function draw() {
   container.updateParticles();
 
   for (const p of container.particles) {
-    circle(p.pos.x, p.pos.y, p.radius);
+    // FIXME:? Drawing the radius 2x as big looks more accurate
+    circle(p.pos.x, p.pos.y, p.radius * 2);
   }
 }
 
 function mouseClicked() {
   // Create particle at mouse location
-  let p = new Particle(mouseX, mouseY, Particle.generateRandomNumber(5, 20));
+  let p = new Particle(mouseX, mouseY, Particle.generateRandomNumber(5, 30));
   container.addParticle(p);
 }
 
 function keyPressed() {
   switch (keyCode) {
-    case 67:  // C
+    case 67: // C
       container.clearParticles();
     default:
   }
@@ -46,7 +47,7 @@ class Container {
 
   /**
    * Adds particle to container
-   * @param {Particle} particle 
+   * @param {Particle} particle
    */
   addParticle(particle) {
     this.particles.push(particle);
@@ -54,7 +55,7 @@ class Container {
 
   /**
    * Performs particle-wall collision
-   * @param {Particle} particle 
+   * @param {Particle} particle
    */
   checkWallCollision(particle) {
     const { pos, vel, radius } = particle;
@@ -78,7 +79,13 @@ class Container {
 
       for (let j = i + 1; j < this.particles.length; j++) {
         let otherParticle = this.particles[j];
-        if (particle.collidesWith(otherParticle)) console.log('bump !');
+        // Change velocities when two particles collide
+        if (particle.collidesWith(otherParticle)) {
+          const newVel = particle.calculateCollision(otherParticle);
+          const newOtherVel = otherParticle.calculateCollision(particle);
+          particle.vel = newVel;
+          otherParticle.vel = newOtherVel;
+        }
       }
 
       this.checkWallCollision(particle);
@@ -105,7 +112,7 @@ class Particle {
   }
 
   /**
-   * 
+   * Constructor for Particle
    * @param {Number} x x position coord of Particle
    * @param {Number} y y position coord of Particle
    * @param {Number} radius radius of Particle
@@ -155,11 +162,36 @@ class Particle {
     const distance = Math.sqrt(posDiffX * posDiffX + posDiffY * posDiffY);
     // If they're not in range, not colliding
     if (distance > this.radius + radius) return false;
-    
+
     // Check if particles are moving towards each other
     const dp = velDiffX * posDiffX + velDiffY * posDiffY;
     const movingTowards = dp < 0;
     return movingTowards;
   }
-}
 
+  /**
+   * Calculates new velocity of this particle if collided with other Particle
+   * @param {Particle} otherParticle other particle
+   */
+  calculateCollision(otherParticle) {
+    const { pos, vel } = otherParticle;
+    const posDiffX = this.pos.x - pos.x;
+    const posDiffY = this.pos.y - pos.y;
+    const velDiffX = this.vel.x - vel.x;
+    const velDiffY = this.vel.y - vel.y;
+
+    // Dot product of < v_1 - v_2, x_1 - x_2 >
+    const dp = posDiffX * velDiffX + posDiffY * velDiffY;
+    const lengthPosDiff = Math.sqrt(posDiffX * posDiffX + posDiffY * posDiffY);
+    const l = lengthPosDiff * lengthPosDiff;
+
+    // TODO: incorporate mass
+
+    const rhsScalar = dp / l;
+    const rhs = { x: posDiffX * rhsScalar, y: posDiffY * rhsScalar };
+
+    // Calculate new velocity
+    const newVelocity = { x: this.vel.x - rhs.x, y: this.vel.y - rhs.y };
+    return newVelocity;
+  }
+}
