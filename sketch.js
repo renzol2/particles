@@ -15,14 +15,15 @@ function draw() {
   container.updateParticles();
 
   for (const p of container.particles) {
-    // FIXME:? Drawing the radius 2x as big looks more accurate
-    circle(p.pos.x, p.pos.y, p.radius * 2);
+    // FIXME:? Drawing the radius ~2x as big looks more accurate
+    circle(p.pos.x, p.pos.y, p.radius * 1.9);
   }
 }
 
 function mouseClicked() {
   // Create particle at mouse location
-  let p = new Particle(mouseX, mouseY, Particle.generateRandomNumber(5, 30));
+  const size = generateRandomNumber(5, 30);
+  let p = new Particle(mouseX, mouseY, size, size);
   container.addParticle(p);
 }
 
@@ -32,6 +33,15 @@ function keyPressed() {
       container.clearParticles();
     default:
   }
+}
+
+/**
+ * Generates a random integer in [min, max]
+ * @param {Number} min lower bound
+ * @param {Number} max higher bound
+ */
+function generateRandomNumber(min, max) {
+  return (max - min) * Math.random() + min;
 }
 
 /**
@@ -103,27 +113,21 @@ class Container {
  */
 class Particle {
   /**
-   * Generates a random integer in [min, max]
-   * @param {Number} min lower bound
-   * @param {Number} max higher bound
-   */
-  static generateRandomNumber(min, max) {
-    return (max - min) * Math.random() + min;
-  }
-
-  /**
    * Constructor for Particle
    * @param {Number} x x position coord of Particle
    * @param {Number} y y position coord of Particle
    * @param {Number} radius radius of Particle
+   * @param {Number} mass mass of Particle
+   * @param {Number} velocityRange determines range of random velocity [-vR, vR]
    */
-  constructor(x, y, radius) {
+  constructor(x, y, radius, mass, velocityRange = mass / 2) {
     this.pos = { x, y };
     this.vel = {
-      x: Particle.generateRandomNumber(-5, 5),
-      y: Particle.generateRandomNumber(-5, 5),
+      x: generateRandomNumber(-velocityRange, velocityRange),
+      y: generateRandomNumber(-velocityRange, velocityRange),
     };
     this.radius = radius;
+    this.mass = mass;
   }
 
   /**
@@ -174,7 +178,7 @@ class Particle {
    * @param {Particle} otherParticle other particle
    */
   calculateCollision(otherParticle) {
-    const { pos, vel } = otherParticle;
+    const { pos, vel, mass } = otherParticle;
     const posDiffX = this.pos.x - pos.x;
     const posDiffY = this.pos.y - pos.y;
     const velDiffX = this.vel.x - vel.x;
@@ -185,9 +189,9 @@ class Particle {
     const lengthPosDiff = Math.sqrt(posDiffX * posDiffX + posDiffY * posDiffY);
     const l = lengthPosDiff * lengthPosDiff;
 
-    // TODO: incorporate mass
+    const massTerm = (2 * mass) / (this.mass + mass);
 
-    const rhsScalar = dp / l;
+    const rhsScalar = massTerm * (dp / l);
     const rhs = { x: posDiffX * rhsScalar, y: posDiffY * rhsScalar };
 
     // Calculate new velocity
