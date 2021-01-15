@@ -2,6 +2,8 @@
 let container;
 let isPaused = false;
 let showControls = true;
+let particleSpawnCount = 1;
+const MAX_SPAWN_COUNT = 50;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -24,23 +26,29 @@ function draw() {
     fill(p.color.r, p.color.g, p.color.b);
     circle(p.pos.x, p.pos.y, p.radius * 1.9);
   }
-  
+
+  fill(150);
+  text(String(particleSpawnCount), mouseX, mouseY + 30);
+
   if (showControls) writeControls();
 }
 
 function writeControls() {
   const controls = [
-    'Click: create particle',
-    'C: clear particles',
-    'P: pause',
-    'H: hide controls',
+    `Click: create ${particleSpawnCount} particle(s)`,
+    'C: clear all particles',
+    'P: toggle pause',
+    'H: toggle hide controls',
     'Up arrow: increase speed',
     'Down arrow: decrease speed',
     'R: reset speed',
   ];
 
   fill(255, 255, 255);
+  textSize(20);
   text('Controls', 10, 20);
+
+  textSize(16);
   controls.forEach((c, i) => {
     text(c, 20, 20 + (i + 1) * 20);
   });
@@ -48,15 +56,10 @@ function writeControls() {
 
 function mouseClicked() {
   // Create particle at mouse location
-  const size = getRandInt(5, 30);
-  const color = {
-    r: getRandInt(0, 255),
-    g: getRandInt(0, 255),
-    b: getRandInt(0, 255),
-  };
-  let p = new Particle(mouseX, mouseY, size, size);
-  p.color = color;
-  container.addParticle(p);
+  for (let i = 0; i < particleSpawnCount; i++) {
+    const p = Particle.createRandomParticle(mouseX, mouseY);
+    container.addParticle(p);
+  }
 }
 
 function keyPressed() {
@@ -64,22 +67,40 @@ function keyPressed() {
     case 67: // C
       container.clearParticles();
       break;
+
     case 82: // R
       container.timestep = 1;
       break;
+
     case 38: // up arrow
       container.adjustTimestep(1.2);
       break;
+
     case 40: // down arrow
       container.adjustTimestep(0.8);
       break;
+
     case 72: // H
       showControls = !showControls;
       break;
+
     case 80: // P
       isPaused = !isPaused;
       break;
+
     default:
+  }
+}
+
+function mouseWheel({ deltaY }) {
+  // Change the number of particles to spawn per click
+  // by moving mouse wheel up/down
+  if (deltaY < 0) {
+    if (particleSpawnCount >= MAX_SPAWN_COUNT) return;
+    particleSpawnCount++;
+  } else {
+    if (particleSpawnCount <= 1) return;
+    particleSpawnCount--;
   }
 }
 
@@ -255,5 +276,22 @@ class Particle {
     // Calculate new velocity
     const newVelocity = { x: this.vel.x - rhs.x, y: this.vel.y - rhs.y };
     return newVelocity;
+  }
+
+  /**
+   * Returns particle with random size and color
+   * @param {Number} x 
+   * @param {Number} y 
+   */
+  static createRandomParticle(x, y) {
+    const size = getRandInt(5, 30);
+    const color = {
+      r: getRandInt(0, 255),
+      g: getRandInt(0, 255),
+      b: getRandInt(0, 255),
+    };
+    let p = new Particle(x, y, size, size);
+    p.color = color;
+    return p;
   }
 }
